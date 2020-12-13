@@ -23,7 +23,7 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    log_lklihood = 1
+    log_lklihood = 0
     count = 0
     for i in range(len(data["is_correct"])):
         cur_user_id = data["user_id"][i]
@@ -32,18 +32,17 @@ def neg_log_likelihood(data, theta, beta):
 
         if data["is_correct"][i] != np.nan:
             x_i = data["is_correct"][i]
-            cur_theta = theta[cur_user_id]
-            cur_beta = beta[cur_question_id]
+            cur_theta = sigmoid(theta[cur_user_id])
+            cur_beta = sigmoid(beta[cur_question_id])
             prob = (np.exp(cur_theta - cur_beta))/(1+(np.exp(cur_theta-cur_beta)))
 
-            # this_data_likelihood = (x_i*np.log(prob) + (1-x_i)*np.log(1-prob))
-            this_data_likelihood = x_i * np.logaddexp(0, -prob) + (1-x_i)*np.logaddexp(0, prob)
+            this_data_likelihood = (x_i*prob + (1-x_i)*(1-prob))
             log_lklihood = log_lklihood + this_data_likelihood
             # print("data_id:{} cur_user_id:{} cur_q_id:{} this_data_likelihood {}".format(i, cur_user_id, cur_question_id, this_data_likelihood))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return -log_lklihood/count
+    return -np.log(log_lklihood)
 
 
 def update_theta_beta(data, lr, theta, beta):
@@ -70,20 +69,46 @@ def update_theta_beta(data, lr, theta, beta):
     NC = 0
     NIC = 0
     for i in range(len(data["is_correct"])):
-        if(data["is_correct"][i]):
-            NC += 1
-        if(not data["is_correct"][i]):
-            NIC += 1
+        cur_user_id = data["user_id"][i]
+        cur_question_id = data["question_id"][i]
+        x = np.exp(sigmoid(beta[cur_question_id]))
+        y = np.exp(sigmoid(theta[cur_user_id]))
+        if (data["is_correct"][i]):
 
-    for i in range(theta.shape[0]):
-        term1 = 1 * np.sum(np.exp(beta))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i])))
-        term2 = -1 * (np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
-        theta[i] += lr * term1 + term2
+            theta[cur_user_id] += (lr * (y/(x+y)))
+            beta[cur_question_id] += (lr * (-y/(x+y)))
+        if (not data["is_correct"][i]):
+            theta[cur_user_id] += (lr * (-x / (x + y)))
+            beta[cur_question_id] += (lr * (x / (x + y)))
+        # if(data["is_correct"][i]):
+        #     theta[cur_user_id] += lr * np.exp(beta[cur_question_id])/(np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
+        #     beta[cur_question_id] += -1 *lr * np.exp(beta[cur_question_id])/(np.exp(beta[cur_question_id] + np.exp(theta)))
+        # if(not data["is_correct"][i]):
+        #     theta[cur_user_id] += lr * -1 * np.exp(theta[cur_user_id]) / (np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
+        #     beta[cur_question_id] += lr* np.exp(beta[cur_question_id]) / (
+        #                 np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
 
-    for k in range(beta.shape[0]):
-        term1 = -1 * np.sum(np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
-        term2 = 1 * (np.sum(np.exp(theta)))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
-        beta[k] += lr * term1 + term2
+    # for i in range(theta.shape[0]):
+    #     top = np.exp(theta[i]) - (np.sum(np.exp(beta))/1)
+    #     bot = np.exp(theta[i]) + (np.sum(np.exp(beta))/1)
+    #     theta[i] += lr * (-top / bot)
+    #
+    # for k in range(beta.shape[0]):
+    #     top = np.exp(beta[k]) - (np.sum(np.exp(theta))/1)
+    #     bot = np.exp(beta[k]) + (np.sum(np.exp(theta))/1)
+    #     beta[k] += lr * (-top / bot)
+
+    # for i in range(theta.shape[0]):
+    #     term1 = 1 * np.sum(np.exp(beta))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i])))
+    #     term2 = -1 * (np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
+    #     theta[i] += lr * (term1 + term2)
+    #
+    # for k in range(beta.shape[0]):
+    #     term1 = -1 * np.sum(np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
+    #     term2 = 1 * (np.sum(np.exp(theta)))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
+    #     beta[k] += lr * (term1 + term2)
+
+
 
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -107,20 +132,24 @@ def irt(data, val_data, lr, iterations):
     # TODO: Initialize theta and beta.
     # theta = None
     # beta = None
-    theta = np.zeros((542,))
-    beta = np.zeros((1774,))
+    theta = np.random.rand(542,)
+    beta = np.random.rand(1774,)
+    # theta = np.zeros((542, ))
+    # beta = np.zeros((1774, ))
+    # theta = np.ones((542, ))
+    # beta = np.ones((1774, ))
 
     val_acc_lst = []
 
     for i in range(iterations):
-        if i % 5 == 0:
-            print("current iteration #:{}".format(i))
-            neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
-            score = evaluate(data=val_data, theta=theta, beta=beta)
-            val_acc_lst.append(score)
-            print("NLLK: {} \t Score: {}".format(neg_lld, score))
+
+        neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
+        score = evaluate(data=val_data, theta=theta, beta=beta)
+        val_acc_lst.append(score)
+        print("iteration:{} : {} \t Score: {}".format(i, neg_lld, score))
 
         theta, beta = update_theta_beta(data, lr, theta, beta)
+
 
     # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst
@@ -160,7 +189,7 @@ def main():
 
     # print(neg_log_likelihood(train_data, theta, beta))
     # update_theta_beta(train_data, 0.1, theta, beta)
-    irt(train_data, val_data, 10, 10000)
+    irt(train_data, val_data, 0.01, 90000)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
