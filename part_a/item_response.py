@@ -43,7 +43,7 @@ def neg_log_likelihood(data, theta, beta):
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return -log_lklihood
+    return -log_lklihood/count
 
 
 def update_theta_beta(data, lr, theta, beta):
@@ -76,21 +76,15 @@ def update_theta_beta(data, lr, theta, beta):
             NIC += 1
 
     for i in range(theta.shape[0]):
-        theta[i] -= NC * (np.sum(np.exp(beta)))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i]))) + NIC * (-np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
+        term1 = 1 * np.sum(np.exp(beta))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i])))
+        term2 = -1 * (np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
+        theta[i] += lr * term1 + term2
 
     for k in range(beta.shape[0]):
-        beta[k] -= NC * (-np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta))) + NIC * (-np.exp(np.sum(theta)))/((np.exp(beta[k]))+np.exp(np.sum(theta)))
+        term1 = -1 * np.sum(np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
+        term2 = 1 * (np.sum(np.exp(theta)))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
+        beta[k] += lr * term1 + term2
 
-
-    # for i in range(len(data["is_correct"])):
-    #     cur_user_id = data["user_id"][i]
-    #     cur_question_id = data["question_id"][i]
-    #     if data["is_correct"][i] != np.nan:
-    #         theta[cur_user_id] -= lr * (NC * (np.exp(beta[cur_question_id]))/(np.exp(beta[cur_question_id])+np.exp(theta[cur_user_id]))) + NIC * -1 *(np.exp(theta[cur_user_id]))/(np.exp(beta[cur_question_id])+np.exp(theta[cur_user_id]))
-    #         beta[cur_user_id] -= lr * (NC * -1 * (np.exp(beta[cur_question_id])) / (
-    #                     np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))) + NIC * (
-    #                                   np.exp(theta[cur_user_id])) / (
-    #                                           np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -119,10 +113,13 @@ def irt(data, val_data, lr, iterations):
     val_acc_lst = []
 
     for i in range(iterations):
-        neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
-        score = evaluate(data=val_data, theta=theta, beta=beta)
-        val_acc_lst.append(score)
-        print("NLLK: {} \t Score: {}".format(neg_lld, score))
+        if i % 5 == 0:
+            print("current iteration #:{}".format(i))
+            neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
+            score = evaluate(data=val_data, theta=theta, beta=beta)
+            val_acc_lst.append(score)
+            print("NLLK: {} \t Score: {}".format(neg_lld, score))
+
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
     # TODO: You may change the return values to achieve what you want.
@@ -163,7 +160,7 @@ def main():
 
     # print(neg_log_likelihood(train_data, theta, beta))
     # update_theta_beta(train_data, 0.1, theta, beta)
-    irt(train_data, val_data, 0.001, 1000)
+    irt(train_data, val_data, 10, 10000)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
