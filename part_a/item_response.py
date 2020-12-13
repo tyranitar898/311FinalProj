@@ -2,7 +2,6 @@ from utils import *
 
 import numpy as np
 
-
 def sigmoid(x):
     """ Apply sigmoid function.
     """
@@ -24,7 +23,23 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    log_lklihood = 0.
+    log_lklihood = 1
+    count = 0
+    for i in range(len(data["is_correct"])):
+        cur_user_id = data["user_id"][i]
+        cur_question_id = data["question_id"][i]
+        count += 1
+
+        if data["is_correct"][i] != np.nan:
+            x_i = data["is_correct"][i]
+            cur_theta = theta[cur_user_id]
+            cur_beta = beta[cur_question_id]
+            prob = (np.exp(cur_theta - cur_beta))/(1+(np.exp(cur_theta-cur_beta)))
+
+            # this_data_likelihood = (x_i*np.log(prob) + (1-x_i)*np.log(1-prob))
+            this_data_likelihood = x_i * np.logaddexp(0, -prob) + (1-x_i)*np.logaddexp(0, prob)
+            log_lklihood = log_lklihood + this_data_likelihood
+            # print("data_id:{} cur_user_id:{} cur_q_id:{} this_data_likelihood {}".format(i, cur_user_id, cur_question_id, this_data_likelihood))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -52,7 +67,30 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    pass
+    NC = 0
+    NIC = 0
+    for i in range(len(data["is_correct"])):
+        if(data["is_correct"][i]):
+            NC += 1
+        if(not data["is_correct"][i]):
+            NIC += 1
+
+    for i in range(theta.shape[0]):
+        theta[i] -= NC * (np.sum(np.exp(beta)))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i]))) + NIC * (-np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
+
+    for k in range(beta.shape[0]):
+        beta[k] -= NC * (-np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta))) + NIC * (-np.exp(np.sum(theta)))/((np.exp(beta[k]))+np.exp(np.sum(theta)))
+
+
+    # for i in range(len(data["is_correct"])):
+    #     cur_user_id = data["user_id"][i]
+    #     cur_question_id = data["question_id"][i]
+    #     if data["is_correct"][i] != np.nan:
+    #         theta[cur_user_id] -= lr * (NC * (np.exp(beta[cur_question_id]))/(np.exp(beta[cur_question_id])+np.exp(theta[cur_user_id]))) + NIC * -1 *(np.exp(theta[cur_user_id]))/(np.exp(beta[cur_question_id])+np.exp(theta[cur_user_id]))
+    #         beta[cur_user_id] -= lr * (NC * -1 * (np.exp(beta[cur_question_id])) / (
+    #                     np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))) + NIC * (
+    #                                   np.exp(theta[cur_user_id])) / (
+    #                                           np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -73,8 +111,10 @@ def irt(data, val_data, lr, iterations):
     :return: (theta, beta, val_acc_lst)
     """
     # TODO: Initialize theta and beta.
-    theta = None
-    beta = None
+    # theta = None
+    # beta = None
+    theta = np.zeros((542,))
+    beta = np.zeros((1774,))
 
     val_acc_lst = []
 
@@ -120,7 +160,10 @@ def main():
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    pass
+
+    # print(neg_log_likelihood(train_data, theta, beta))
+    # update_theta_beta(train_data, 0.1, theta, beta)
+    irt(train_data, val_data, 0.001, 1000)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
