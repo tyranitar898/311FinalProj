@@ -1,7 +1,7 @@
 from utils import *
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 def sigmoid(x):
     """ Apply sigmoid function.
     """
@@ -32,8 +32,8 @@ def neg_log_likelihood(data, theta, beta):
 
         if data["is_correct"][i] != np.nan:
             x_i = data["is_correct"][i]
-            cur_theta = sigmoid(theta[cur_user_id])
-            cur_beta = sigmoid(beta[cur_question_id])
+            cur_theta = (theta[cur_user_id])
+            cur_beta = (beta[cur_question_id])
             prob = (np.exp(cur_theta - cur_beta))/(1+(np.exp(cur_theta-cur_beta)))
 
             this_data_likelihood = (x_i*prob + (1-x_i)*(1-prob))
@@ -66,47 +66,21 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    NC = 0
-    NIC = 0
+
     for i in range(len(data["is_correct"])):
         cur_user_id = data["user_id"][i]
         cur_question_id = data["question_id"][i]
-        x = np.exp(sigmoid(beta[cur_question_id]))
-        y = np.exp(sigmoid(theta[cur_user_id]))
+        x = np.exp((theta[cur_user_id]))
+        y = np.exp((beta[cur_question_id]))
         if (data["is_correct"][i]):
-
             theta[cur_user_id] += (lr * (y/(x+y)))
+            x = np.exp((theta[cur_user_id]))
             beta[cur_question_id] += (lr * (-y/(x+y)))
         if (not data["is_correct"][i]):
             theta[cur_user_id] += (lr * (-x / (x + y)))
+            x = np.exp((theta[cur_user_id]))
             beta[cur_question_id] += (lr * (x / (x + y)))
-        # if(data["is_correct"][i]):
-        #     theta[cur_user_id] += lr * np.exp(beta[cur_question_id])/(np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
-        #     beta[cur_question_id] += -1 *lr * np.exp(beta[cur_question_id])/(np.exp(beta[cur_question_id] + np.exp(theta)))
-        # if(not data["is_correct"][i]):
-        #     theta[cur_user_id] += lr * -1 * np.exp(theta[cur_user_id]) / (np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
-        #     beta[cur_question_id] += lr* np.exp(beta[cur_question_id]) / (
-        #                 np.exp(beta[cur_question_id]) + np.exp(theta[cur_user_id]))
 
-    # for i in range(theta.shape[0]):
-    #     top = np.exp(theta[i]) - (np.sum(np.exp(beta))/1)
-    #     bot = np.exp(theta[i]) + (np.sum(np.exp(beta))/1)
-    #     theta[i] += lr * (-top / bot)
-    #
-    # for k in range(beta.shape[0]):
-    #     top = np.exp(beta[k]) - (np.sum(np.exp(theta))/1)
-    #     bot = np.exp(beta[k]) + (np.sum(np.exp(theta))/1)
-    #     beta[k] += lr * (-top / bot)
-
-    # for i in range(theta.shape[0]):
-    #     term1 = 1 * np.sum(np.exp(beta))/(np.sum(np.exp(beta))+np.sum(np.exp(theta[i])))
-    #     term2 = -1 * (np.exp(theta[i]))/(np.sum(np.exp(beta))+np.exp(theta[i]))
-    #     theta[i] += lr * (term1 + term2)
-    #
-    # for k in range(beta.shape[0]):
-    #     term1 = -1 * np.sum(np.exp(beta[k]))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
-    #     term2 = 1 * (np.sum(np.exp(theta)))/(np.sum(np.exp(beta[k]))+np.sum(np.exp(theta)))
-    #     beta[k] += lr * (term1 + term2)
 
 
 
@@ -132,27 +106,34 @@ def irt(data, val_data, lr, iterations):
     # TODO: Initialize theta and beta.
     # theta = None
     # beta = None
-    theta = np.random.rand(542,)
-    beta = np.random.rand(1774,)
-    # theta = np.zeros((542, ))
-    # beta = np.zeros((1774, ))
-    # theta = np.ones((542, ))
-    # beta = np.ones((1774, ))
+    # theta = np.random.rand(542,)
+    # beta = np.random.rand(1774,)
+
+    theta = np.zeros((542, ))
+    beta = np.zeros((1774, ))
+    # theta = np.ones(542, )
+    # beta = np.ones(1774, )
 
     val_acc_lst = []
+    train_ll = []
+    val_ll = []
 
     for i in range(iterations):
 
         neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
+        neg_lld_valid = neg_log_likelihood(val_data, theta=theta, beta=beta)
+        train_ll.append(neg_lld)
+        val_ll.append(neg_lld_valid)
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
-        print("iteration:{} : {} \t Score: {}".format(i, neg_lld, score))
+        print("iteration:{} : neg_lld {} \t Score: {}".format(i, neg_lld, score))
 
         theta, beta = update_theta_beta(data, lr, theta, beta)
-
+        # if i > 1 and (val_acc_lst[i] < val_acc_lst[i-1]):
+        #     print("val acc dip @{}".format(i))
 
     # TODO: You may change the return values to achieve what you want.
-    return theta, beta, val_acc_lst
+    return train_ll, val_ll, theta, beta, val_acc_lst
 
 
 def evaluate(data, theta, beta):
@@ -174,6 +155,11 @@ def evaluate(data, theta, beta):
            / len(data["is_correct"])
 
 
+def prob(theta, beta):
+    probb = np.exp(theta - beta)/(1+np.exp(theta-beta))
+    return probb
+
+
 def main():
     train_data = load_train_csv("../data")
     # You may optionally use the sparse matrix.
@@ -189,7 +175,18 @@ def main():
 
     # print(neg_log_likelihood(train_data, theta, beta))
     # update_theta_beta(train_data, 0.1, theta, beta)
-    irt(train_data, val_data, 0.01, 90000)
+    iterations = 9
+    learning_rate = 0.01
+
+    train_ll, val_ll, theta, beta, val_acc_lst = irt(train_data, val_data, learning_rate, iterations)
+    iteration_arr = list(range(iterations))
+    # plt.title("iteration vs -loglikelihood hyperparamters: lr = {} iterations = {}".format(learning_rate, iteratons))
+    #
+    # plt.plot(iteration_arr, train_ll, label='train lld')
+    # plt.plot(iteration_arr, val_ll, label='valid lld')
+    #
+    # plt.legend()
+    # plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -198,7 +195,39 @@ def main():
     # TODO:                                                             #
     # Implement part (c)                                                #
     #####################################################################
-    pass
+
+    # hyperparameters choose from above
+    # iteratons = 9
+    # learning_rate = 0.01
+    # train_ll, test_ll, theta, beta, val_acc_lst = irt(train_data, test_data, learning_rate, iterations)
+
+    # Part (d)
+    theta_arr = list(range(-5, 6))
+
+
+    y1 = []
+    y2 = []
+    y3 = []
+    y4 = []
+    y5 = []
+
+    for i in theta_arr:
+        y1.append(prob(i, beta=beta[11]))
+        y2.append(prob(i, beta=beta[22]))
+        y3.append(prob(i, beta=beta[33]))
+        y4.append(prob(i, beta=beta[44]))
+        y5.append(prob(i, beta=beta[55]))
+    plt.title("theta vs p(): ")
+
+    plt.plot(theta_arr, y1, label='q_id 11')
+    plt.plot(theta_arr, y2, label='q_id 22')
+    plt.plot(theta_arr, y3, label='q_id 33')
+    plt.plot(theta_arr, y4, label='q_id 44')
+    plt.plot(theta_arr, y5, label='q_id 55')
+
+    plt.legend()
+    plt.show()
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
