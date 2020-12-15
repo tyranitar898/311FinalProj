@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from knn import knn_impute_by_user
-from item_response import irt, evaluate
+from item_response import irt, sigmoid
 
 
 def sample_with_replacement(data, num_sample_pts):
@@ -28,6 +28,28 @@ def sample_with_replacement(data, num_sample_pts):
 
     return result
 
+def evaluate(data, theta, beta, m_samples):
+    """ Evaluate the model given data and return the accuracy.
+    :param data: A dictionary {user_id: list, question_id: list,
+    is_correct: list}
+
+    :param theta: Vector
+    :param beta: Vector
+    :return: float
+    """
+    pred = []
+
+    for i, q in enumerate(data["question_id"]):
+        x = 0
+        for m in range(m_samples):
+            u = data["user_id"][i]
+            x += (theta[m][u] - beta[m][q]).sum()
+        x = x/m_samples
+        p_a = sigmoid(x)
+        pred.append(p_a >= 0.5)
+    return np.sum((data["is_correct"] == np.array(pred))) \
+           / len(data["is_correct"])
+
 def main():
     train_data = load_train_csv("../data")
     # You may optionally use the sparse matrix.
@@ -39,28 +61,27 @@ def main():
     n = len(train_data["is_correct"])
 
     # BAGGING
-    for k in range(3):
+    m = 3
+    thetas = []
+    betas = []
+    accs = []
+
+    for k in range(m):
         bag = sample_with_replacement(train_data, n)
         bags.append(bag)
 
-    train_ll, val_ll, theta1, beta1, val_acc_lst1 = irt(bags[0], val_data, 0.01, 9)
-    train_ll, val_ll, theta2, beta2, val_acc_lst2 = irt(bags[1], val_data, 0.01, 9)
-    train_ll, val_ll, theta3, beta3, val_acc_lst3 = irt(bags[2], val_data, 0.01, 9)
+    for kk in range(m):
+        train_ll, val_ll, theta, beta, val_acc_lst = irt(bags[kk], val_data, 0.01, 9)
+        thetas.append(theta)
+        betas.append(beta)
+        accs.append(val_acc_lst[-1])
+    # accuracies of individual IRTs
+    print(accs)
+    # accuracy of taking avg prediction of IRTs
+    print(evaluate(val_data, thetas, betas, m))
 
-    print(val_acc_lst1[-1], val_acc_lst2[-1], val_acc_lst3[-1])
-    avg_theta = theta1 + theta2 + theta3 / 3
-    avg_beta = beta1 + beta2 + beta3 / 3
-    print(evaluate(val_data, avg_theta, avg_beta))
-
-
-    # acc1 = knn_impute_by_user(bag1, val_data, 11)
-    # acc2 = knn_impute_by_user(bag2, val_data, 11)
-    # acc3 = knn_impute_by_user(bag3, val_data, 11)
-    # print(acc1, acc2, acc3)
 
 if __name__ == "__main__":
     main()
 
-
-    #TODO: calcualte avg
     print('done')
