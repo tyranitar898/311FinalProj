@@ -2,6 +2,7 @@ from utils import *
 from scipy.linalg import sqrtm
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def svd_reconstruct(matrix, k):
@@ -58,7 +59,7 @@ def squared_error_loss(data, u, z):
     return 0.5 * loss
 
 
-def update_u_z(train_data, lr, u, z):
+def update_u_z(train_data, lr, u: np.ndarray, z: np.ndarray):
     """ Return the updated U and Z after applying
     stochastic gradient descent for matrix completion.
 
@@ -79,7 +80,16 @@ def update_u_z(train_data, lr, u, z):
 
     c = train_data["is_correct"][i]
     n = train_data["user_id"][i]
-    q = train_data["question_id"][i]
+    m = train_data["question_id"][i]
+    u_n = u[n, :]
+    z_m = z[m, :]
+
+    u_n = u_n + lr * (c - u_n.dot(z_m)) * z_m
+    z_m = z_m + lr * (c - u_n.dot(z_m)) * u_n
+
+    u[n, :] = u_n
+    z[m, :] = z_m
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -106,11 +116,19 @@ def als(train_data, k, lr, num_iteration):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    mat = None
+
+    losses = []
+    for i in range(num_iteration):
+        if i % (num_iteration//50) == 0:
+            print(f"{100*(i / num_iteration)}%")
+            losses.append((i, squared_error_loss(train_data, u, z)))
+        u, z = update_u_z(train_data, lr, u, z)
+
+    mat = u @ z.transpose()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return mat
+    return mat, losses
 
 
 def main():
@@ -124,7 +142,17 @@ def main():
     # (SVD) Try out at least 5 different k and select the best k        #
     # using the validation set.                                         #
     #####################################################################
-    pass
+    # best k = 9
+    # for k in [1, 5, 7, 8, 9, 10, 20]:
+    #     x = svd_reconstruct(train_matrix, k)
+    #     print(k, sparse_matrix_evaluate(val_data, x))
+
+    # k = 9
+    # x = svd_reconstruct(train_matrix, k)
+    # print('Train, k=9', sparse_matrix_evaluate(train_data, x))
+    # print('Validation, k=9', sparse_matrix_evaluate(val_data, x))
+    # print('Test, k=9', sparse_matrix_evaluate(test_data, x))
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -134,7 +162,21 @@ def main():
     # (ALS) Try out at least 5 different k and select the best k        #
     # using the validation set.                                         #
     #####################################################################
-    pass
+
+    # best hyperparamters found so far
+    lr = 0.01
+    num_iter = 1000000
+    k = 100
+
+    mat, losses = als(train_data, k, lr, num_iter)
+    score = sparse_matrix_evaluate(val_data, mat)
+    print(f"k={k}, lr={lr}, num_iter={num_iter}, score={score}")
+
+    plt.plot([i[0] for i in losses], [i[1] for i in losses])
+    plt.show()
+
+    # np.save("matrx_fac", mat)
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
