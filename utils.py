@@ -5,6 +5,30 @@ import csv
 import os
 
 
+def load_meta(path, parse_fns):
+    # A helper function to load the csv file.
+    if not os.path.exists(path):
+        raise Exception("The specified path {} does not exist.".format(path))
+
+    data = {}
+    headers = []
+    # Iterate over the row to fill in the data.
+    with open(path, "r") as csv_file:
+        reader = csv.reader(csv_file)
+        for row_num, row in enumerate(reader):
+            if row_num == 0:
+                headers = [h for h in row]
+                data = {h: [] for h in headers}
+            else:
+                for i, d in enumerate(row):
+                    try:
+                        data[headers[i]].append(parse_fns[i](d))
+                    except (TypeError, ValueError):  # field is missing
+                        data[headers[i]].append(None)
+
+    return data, headers
+
+
 def _load_csv(path):
     # A helper function to load the csv file.
     if not os.path.exists(path):

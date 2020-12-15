@@ -119,8 +119,8 @@ def als(train_data, k, lr, num_iteration):
 
     losses = []
     for i in range(num_iteration):
-        if i % (num_iteration//50) == 0:
-            print(f"{100*(i / num_iteration)}%")
+        if i % (num_iteration // 100) == 0:
+            print(f"{100 * (i / num_iteration)}%")
             losses.append((i, squared_error_loss(train_data, u, z)))
         u, z = update_u_z(train_data, lr, u, z)
 
@@ -143,10 +143,16 @@ def main():
     # using the validation set.                                         #
     #####################################################################
     # best k = 9
-    # for k in [1, 5, 7, 8, 9, 10, 20]:
+    # scores = []
+    # for k in range(1, 25):
     #     x = svd_reconstruct(train_matrix, k)
+    #     scores.append(sparse_matrix_evaluate(val_data, x))
     #     print(k, sparse_matrix_evaluate(val_data, x))
-
+    # plt.plot(range(1, 25), scores)
+    # plt.xlabel("k")
+    # plt.ylabel("Validation Score")
+    # plt.title("SVD k vs Validation Score")
+    # plt.show()
     # k = 9
     # x = svd_reconstruct(train_matrix, k)
     # print('Train, k=9', sparse_matrix_evaluate(train_data, x))
@@ -165,17 +171,21 @@ def main():
 
     # best hyperparamters found so far
     lr = 0.01
-    num_iter = 1000000
     k = 100
+    num_iter = 800000
 
     mat, losses = als(train_data, k, lr, num_iter)
-    score = sparse_matrix_evaluate(val_data, mat)
-    print(f"k={k}, lr={lr}, num_iter={num_iter}, score={score}")
+    print(f"k={k}, lr={lr}, num_iter={num_iter}")
+    print(f"Validation Score={sparse_matrix_evaluate(val_data, mat)}")
+    print(f"Test Score={sparse_matrix_evaluate(test_data, mat)}")
+
+    # plt.plot([i[0] for i in losses], [i[1] for i in losses])
+    plt.title("Squared Error vs Number of Iterations")
+    plt.ylabel("Squared Error")
+    plt.xlabel("# Iterations")
 
     plt.plot([i[0] for i in losses], [i[1] for i in losses])
     plt.show()
-
-    # np.save("matrx_fac", mat)
 
     #####################################################################
     #                       END OF YOUR CODE                            #
