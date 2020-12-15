@@ -29,24 +29,25 @@ def sample_with_replacement(data, num_sample_pts):
     return result
 
 def evaluate(data, theta, beta, m_samples):
-    """ Evaluate the model given data and return the accuracy.
-    :param data: A dictionary {user_id: list, question_id: list,
-    is_correct: list}
+    """ Evaluate for mutliple IRT models.
 
-    :param theta: Vector
-    :param beta: Vector
+    :param theta: [Vector]
+    :param beta: [Vector]
+    # note len(beta) == len(theta) == m_samples
+
     :return: float
     """
     pred = []
 
     for i, q in enumerate(data["question_id"]):
-        x = 0
+        avg_pred = 0
         for m in range(m_samples):
             u = data["user_id"][i]
-            x += (theta[m][u] - beta[m][q]).sum()
-        x = x/m_samples
-        p_a = sigmoid(x)
-        pred.append(p_a >= 0.5)
+            x = (theta[m][u] - beta[m][q]).sum()
+            p_a = sigmoid(x)
+            avg_pred += p_a
+        avg_pred = avg_pred/m_samples
+        pred.append(avg_pred >= 0.5)
     return np.sum((data["is_correct"] == np.array(pred))) \
            / len(data["is_correct"])
 
@@ -79,6 +80,7 @@ def main():
     print(accs)
     # accuracy of taking avg prediction of IRTs
     print(evaluate(val_data, thetas, betas, m))
+    print(evaluate(test_data, thetas, betas, m))
 
 
 if __name__ == "__main__":
