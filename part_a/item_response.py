@@ -34,15 +34,14 @@ def neg_log_likelihood(data, theta, beta):
             x_i = data["is_correct"][i]
             cur_theta = (theta[cur_user_id])
             cur_beta = (beta[cur_question_id])
-            prob = (np.exp(cur_theta - cur_beta))/(1+(np.exp(cur_theta-cur_beta)))
-
-            this_data_likelihood = (x_i*prob + (1-x_i)*(1-prob))
-            log_lklihood = log_lklihood + this_data_likelihood
+            prob = sigmoid(cur_theta-cur_beta)
+            log_lklihood = log_lklihood + np.log(prob)
             # print("data_id:{} cur_user_id:{} cur_q_id:{} this_data_likelihood {}".format(i, cur_user_id, cur_question_id, this_data_likelihood))
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return -np.log(log_lklihood)
+    return -log_lklihood
 
 
 def update_theta_beta(data, lr, theta, beta):
@@ -66,20 +65,23 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-
     for i in range(len(data["is_correct"])):
         cur_user_id = data["user_id"][i]
         cur_question_id = data["question_id"][i]
         x = np.exp((theta[cur_user_id]))
         y = np.exp((beta[cur_question_id]))
-        if (data["is_correct"][i]):
+        t = data['is_correct'][i]
+
+        if data["is_correct"][i]:
             theta[cur_user_id] += (lr * (y/(x+y)))
             x = np.exp((theta[cur_user_id]))
             beta[cur_question_id] += (lr * (-y/(x+y)))
-        if (not data["is_correct"][i]):
+        if not data["is_correct"][i]:
             theta[cur_user_id] += (lr * (-x / (x + y)))
             x = np.exp((theta[cur_user_id]))
             beta[cur_question_id] += (lr * (x / (x + y)))
+
+
 
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -122,7 +124,7 @@ def irt(data, val_data, lr, iterations):
         val_ll.append(neg_lld_valid)
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
-        # print("iteration:{} : neg_lld {} \t Score: {}".format(i, neg_lld, score))
+        print("iteration:{} : neg_lld {} \t Score: {}".format(i, neg_lld, score))
 
         theta, beta = update_theta_beta(data, lr, theta, beta)
         # if i > 1 and (val_acc_lst[i] < val_acc_lst[i-1]):
@@ -191,10 +193,12 @@ def main():
 
 
     # Part (c)
-    # hyperparameters choose from above
+    print(val_acc_lst[-1])
+    # # hyperparameters choose from above
     # iteratons = 9
     # learning_rate = 0.01
-    # train_ll, test_ll, theta, beta, val_acc_lst = irt(train_data, test_data, learning_rate, iterations)
+    # train_ll, test_ll, theta, beta, test_acc_lst = irt(train_data, test_data, learning_rate, iterations)
+    # print(test_acc_lst[-1])
 
     # Part (d)
     # theta_arr = list(range(-5, 6))
