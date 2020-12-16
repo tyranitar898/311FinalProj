@@ -81,9 +81,6 @@ def update_theta_beta(data, lr, theta, beta):
             x = np.exp((theta[cur_user_id]))
             beta[cur_question_id] += (lr * (x / (x + y)))
 
-
-
-
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -103,7 +100,6 @@ def irt(data, val_data, lr, iterations):
     :param iterations: int
     :return: (theta, beta, val_acc_lst)
     """
-    # TODO: Initialize theta and beta.
     # theta = None
     # beta = None
     # theta = np.random.rand(542,)
@@ -126,7 +122,7 @@ def irt(data, val_data, lr, iterations):
         val_ll.append(neg_lld_valid)
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
-        print("iteration:{} : neg_lld {} \t Score: {}".format(i, neg_lld, score))
+        # print("iteration:{} : neg_lld {} \t Score: {}".format(i, neg_lld, score))
 
         theta, beta = update_theta_beta(data, lr, theta, beta)
         # if i > 1 and (val_acc_lst[i] < val_acc_lst[i-1]):
@@ -180,53 +176,51 @@ def main():
 
     train_ll, val_ll, theta, beta, val_acc_lst = irt(train_data, val_data, learning_rate, iterations)
     iteration_arr = list(range(iterations))
-    # plt.title("iteration vs -loglikelihood hyperparamters: lr = {} iterations = {}".format(learning_rate, iteratons))
-    #
-    # plt.plot(iteration_arr, train_ll, label='train lld')
-    # plt.plot(iteration_arr, val_ll, label='valid lld')
-    #
-    # plt.legend()
-    # plt.show()
+    plt.title("iteration vs -loglikelihood hyperparamters: lr = {} iterations = {}".format(learning_rate, iterations))
+
+    plt.plot(iteration_arr, train_ll, label='train lld')
+    plt.plot(iteration_arr, val_ll, label='valid lld')
+
+    plt.legend()
+    plt.show()
+
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
 
-    #####################################################################
-    # TODO:                                                             #
-    # Implement part (c)                                                #
-    #####################################################################
 
+    # Part (c)
     # hyperparameters choose from above
     # iteratons = 9
     # learning_rate = 0.01
     # train_ll, test_ll, theta, beta, val_acc_lst = irt(train_data, test_data, learning_rate, iterations)
 
     # Part (d)
-    theta_arr = list(range(-5, 6))
-
-
-    y1 = []
-    y2 = []
-    y3 = []
-    y4 = []
-    y5 = []
-
-    for i in theta_arr:
-        y1.append(prob(i, beta=beta[11]))
-        y2.append(prob(i, beta=beta[22]))
-        y3.append(prob(i, beta=beta[33]))
-        y4.append(prob(i, beta=beta[44]))
-        y5.append(prob(i, beta=beta[55]))
-    plt.title("theta vs p(): ")
-
-    plt.plot(theta_arr, y1, label='q_id 11')
-    plt.plot(theta_arr, y2, label='q_id 22')
-    plt.plot(theta_arr, y3, label='q_id 33')
-    plt.plot(theta_arr, y4, label='q_id 44')
-    plt.plot(theta_arr, y5, label='q_id 55')
-
-    plt.legend()
-    plt.show()
+    # theta_arr = list(range(-5, 6))
+    #
+    # y1 = []
+    # y2 = []
+    # y3 = []
+    # y4 = []
+    # y5 = []
+    #
+    # for i in theta_arr:
+    #     y1.append(prob(i, beta=beta[11]))
+    #     y2.append(prob(i, beta=beta[22]))
+    #     y3.append(prob(i, beta=beta[33]))
+    #     y4.append(prob(i, beta=beta[44]))
+    #     y5.append(prob(i, beta=beta[55]))
+    # plt.title("theta vs p(): ")
+    #
+    # plt.plot(theta_arr, y1, label='q_id 11')
+    # plt.plot(theta_arr, y2, label='q_id 22')
+    # plt.plot(theta_arr, y3, label='q_id 33')
+    # plt.plot(theta_arr, y4, label='q_id 44')
+    # plt.plot(theta_arr, y5, label='q_id 55')
+    #
+    # plt.legend()
+    # plt.show()
 
     #####################################################################
     #                       END OF YOUR CODE                            #
